@@ -1,4 +1,2 @@
 // Widget exports
-export * from "./header"
-export * from "./sidebar"
-export * from "./modal"
+// Widgets will be implemented here as needed

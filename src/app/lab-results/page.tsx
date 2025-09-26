@@ -1,13 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/shared/ui/navigation";
-
-interface Comment {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
+import { commentsApi } from "@/shared/api";
+import type { Comment } from "@/entities";
 
 interface LabResult extends Comment {
   testType: string;
@@ -19,23 +13,27 @@ interface LabResult extends Comment {
 }
 
 async function getLabResults(): Promise<LabResult[]> {
-  const response = await fetch('https://jsonplaceholder.typicode.com/comments');
-  const comments: Comment[] = await response.json();
+  try {
+    const comments = await commentsApi.getComments();
 
-  const testTypes = ['Blood Glucose', 'Cholesterol', 'Blood Pressure', 'Hemoglobin', 'Creatinine', 'Liver Function'];
-  const references = ['70-100 mg/dL', '<200 mg/dL', '120/80 mmHg', '12-16 g/dL', '0.6-1.2 mg/dL', 'Normal'];
+    const testTypes = ['Blood Glucose', 'Cholesterol', 'Blood Pressure', 'Hemoglobin', 'Creatinine', 'Liver Function'];
+    const references = ['70-100 mg/dL', '<200 mg/dL', '120/80 mmHg', '12-16 g/dL', '0.6-1.2 mg/dL', 'Normal'];
 
-  // Transform comments into lab results with additional medical fields
-  return comments.slice(0, 15).map((comment, index) => ({
-    ...comment,
-    testType: testTypes[index % testTypes.length],
-    result: generateResult(index),
-    status: (['normal', 'abnormal', 'critical'] as const)[index % 3],
-    date: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
-      .toISOString().split('T')[0],
-    patientId: comment.postId,
-    reference: references[index % references.length]
-  }));
+    // Transform comments into lab results with additional medical fields
+    return comments.slice(0, 15).map((comment, index) => ({
+      ...comment,
+      testType: testTypes[index % testTypes.length],
+      result: generateResult(index),
+      status: (['normal', 'abnormal', 'critical'] as const)[index % 3],
+      date: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
+        .toISOString().split('T')[0],
+      patientId: comment.postId,
+      reference: references[index % references.length]
+    }));
+  } catch (error) {
+    console.error('Failed to fetch lab results:', error);
+    return []; // Return empty array on error for ISR fallback
+  }
 }
 
 function generateResult(index: number): string {
@@ -133,7 +131,7 @@ export default async function LabResultsPage() {
 
               {result.body && (
                 <div className="mb-4">
-                  <p className="text-sm text-muted-foreground mb-1">Doctor's Notes</p>
+                  <p className="text-sm text-muted-foreground mb-1">Doctor&apos;s Notes</p>
                   <p className="text-sm bg-muted/50 p-3 rounded">{result.body}</p>
                 </div>
               )}

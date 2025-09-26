@@ -3,24 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/shared/ui/navigation";
 import { useState, useEffect } from "react";
-
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  phone: string;
-  website: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-  };
-  company: {
-    name: string;
-  };
-}
+import { usersApi, ApiError } from "@/shared/api";
+import type { User } from "@/entities";
 
 interface Patient extends User {
   age: number;
@@ -38,8 +22,7 @@ export default function PatientsPage() {
     const fetchPatients = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://jsonplaceholder.typicode.com/users');
-        const users: User[] = await response.json();
+        const users = await usersApi.getUsers();
 
         // Transform users into patients with additional medical fields
         const transformedPatients: Patient[] = users.map((user, index) => ({
@@ -52,7 +35,10 @@ export default function PatientsPage() {
 
         setPatients(transformedPatients);
       } catch (err) {
-        setError('Failed to fetch patients data');
+        const errorMessage = err instanceof ApiError
+          ? `API Error (${err.status}): ${err.message}`
+          : 'Failed to fetch patients data';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

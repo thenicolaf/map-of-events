@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/shared/ui/mode-toggle';
 import { cn } from '@/lib/utils';
 

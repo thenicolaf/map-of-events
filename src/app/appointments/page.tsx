@@ -1,12 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/shared/ui/navigation";
-
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+import { postsApi } from "@/shared/api";
+import type { Post } from "@/entities";
 
 interface Appointment extends Post {
   doctorName: string;
@@ -16,17 +11,21 @@ interface Appointment extends Post {
 }
 
 async function getAppointments(): Promise<Appointment[]> {
-  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
-  const posts: Post[] = await response.json();
+  try {
+    const posts = await postsApi.getPosts();
 
-  // Transform posts into appointments with additional fields
-  return posts.slice(0, 10).map((post, index) => ({
-    ...post,
-    doctorName: `Dr. ${['Smith', 'Johnson', 'Brown', 'Davis', 'Miller'][index % 5]}`,
-    date: new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    time: `${9 + Math.floor(index / 2)}:${index % 2 === 0 ? '00' : '30'}`,
-    status: (['scheduled', 'completed', 'cancelled'] as const)[index % 3]
-  }));
+    // Transform posts into appointments with additional fields
+    return posts.slice(0, 10).map((post, index) => ({
+      ...post,
+      doctorName: `Dr. ${['Smith', 'Johnson', 'Brown', 'Davis', 'Miller'][index % 5]}`,
+      date: new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      time: `${9 + Math.floor(index / 2)}:${index % 2 === 0 ? '00' : '30'}`,
+      status: (['scheduled', 'completed', 'cancelled'] as const)[index % 3]
+    }));
+  } catch (error) {
+    console.error('Failed to fetch appointments:', error);
+    return []; // Return empty array on error for SSG fallback
+  }
 }
 
 export default async function AppointmentsPage() {

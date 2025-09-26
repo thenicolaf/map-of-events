@@ -1,12 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/shared/ui/navigation";
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-}
+import { usersApi } from "@/shared/api";
+import type { User } from "@/entities";
 
 interface DashboardData {
   users: User[];
@@ -16,15 +11,25 @@ interface DashboardData {
 }
 
 async function getDashboardData(): Promise<DashboardData> {
-  const response = await fetch('https://jsonplaceholder.typicode.com/users');
-  const users: User[] = await response.json();
+  try {
+    const users = await usersApi.getUsers();
 
-  return {
-    users: users.slice(0, 5), // Show first 5 users as recent patients
-    totalPatients: users.length,
-    totalAppointments: Math.floor(Math.random() * 50) + 20, // Mock appointments count
-    timestamp: new Date().toISOString()
-  };
+    return {
+      users: users.slice(0, 5), // Show first 5 users as recent patients
+      totalPatients: users.length,
+      totalAppointments: Math.floor(Math.random() * 50) + 20, // Mock appointments count
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error);
+    // Fallback data in case of API failure
+    return {
+      users: [],
+      totalPatients: 0,
+      totalAppointments: 0,
+      timestamp: new Date().toISOString()
+    };
+  }
 }
 
 export default async function Dashboard() {
