@@ -1,0 +1,1 @@
+export { LabResultsTable } from './LabResultsTable';
