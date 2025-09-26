@@ -21,16 +21,16 @@ async function getDashboardData(): Promise<DashboardData> {
       users: users.slice(0, 5), // Show first 5 users as recent patients
       totalPatients: users.length,
       totalAppointments: Math.floor(Math.random() * 50) + 20, // Mock appointments count
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Failed to fetch dashboard data:', error);
+    console.error("Failed to fetch dashboard data:", error);
     // Fallback data in case of API failure
     return {
       users: [],
       totalPatients: 0,
       totalAppointments: 0,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }
@@ -43,7 +43,7 @@ const appointments = [
     status: "active" as const,
     patient: { name: "Maria Rodriguez", initials: "MR" },
     time: "09:00",
-    duration: "30 min"
+    duration: "30 min",
   },
   {
     id: "apt-2",
@@ -51,7 +51,7 @@ const appointments = [
     status: "progress" as const,
     patient: { name: "John Smith", initials: "JS" },
     time: "09:30",
-    duration: "45 min"
+    duration: "45 min",
   },
   {
     id: "apt-3",
@@ -59,17 +59,30 @@ const appointments = [
     status: "scheduled" as const,
     patient: { name: "Emily Chen", initials: "EC" },
     time: "10:15",
-    duration: "60 min"
-  }
+    duration: "60 min",
+  },
 ];
 
 // Mock data for tasks
 const tasks = [
-  { id: "1", title: "Call Maria Rodriguez about test results", time: "10:30 AM" },
+  {
+    id: "1",
+    title: "Call Maria Rodriguez about test results",
+    time: "10:30 AM",
+  },
   { id: "2", title: "Review John Smith's MRI scan", time: "10:30 AM" },
-  { id: "3", title: "Follow up with Emily Chen treatment plan", time: "2:00 PM" },
-  { id: "4", title: "Complete weekly reports", time: "End of day", completed: true },
-  { id: "5", title: "Check lab results for Robert Johnson", time: "2:00 PM" }
+  {
+    id: "3",
+    title: "Follow up with Emily Chen treatment plan",
+    time: "2:00 PM",
+  },
+  {
+    id: "4",
+    title: "Complete weekly reports",
+    time: "End of day",
+    completed: true,
+  },
+  { id: "5", title: "Check lab results for Robert Johnson", time: "2:00 PM" },
 ];
 
 export default async function Dashboard() {
@@ -86,13 +99,12 @@ export default async function Dashboard() {
 
         {/* Today's Appointments */}
         <div>
-          <h2 className="text-lg font-semibold mb-4">Today&apos;s Appointments</h2>
+          <h2 className="text-lg font-semibold mb-4">
+            Today&apos;s Appointments
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {appointments.map((appointment) => (
-              <AppointmentCard
-                key={appointment.id}
-                {...appointment}
-              />
+              <AppointmentCard key={appointment.id} {...appointment} />
             ))}
           </div>
         </div>
@@ -107,12 +119,20 @@ export default async function Dashboard() {
           <StatsCard
             title="Critical Alerts"
             value={3}
-            change={{ value: 2, type: "decrease", timeframe: "-2 from yesterday" }}
+            change={{
+              value: 2,
+              type: "decrease",
+              timeframe: "-2 from yesterday",
+            }}
           />
           <StatsCard
             title="Admissions Today"
             value={2}
-            change={{ value: 2, type: "increase", timeframe: "+2 from yesterday" }}
+            change={{
+              value: 2,
+              type: "increase",
+              timeframe: "+2 from yesterday",
+            }}
           />
         </div>
 
@@ -124,7 +144,10 @@ export default async function Dashboard() {
           <h3 className="text-lg font-semibold mb-4">Recent Patients (SSR)</h3>
           <div className="space-y-3">
             {data.users.map((user) => (
-              <div key={user.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div
+                key={user.id}
+                className="flex items-center justify-between p-3 bg-muted rounded-lg"
+              >
                 <div>
                   <p className="font-medium">{user.name}</p>
                   <p className="text-sm text-muted-foreground">{user.email}</p>

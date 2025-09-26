@@ -5,8 +5,15 @@ import { Modal } from "@/shared/ui/modal";
 import { useState, useEffect } from "react";
 import { usersApi, ApiError } from "@/shared/api";
 import type { User } from "@/entities";
-import { UserPlus } from "lucide-react";
+import { UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { submitPatientAction } from "@/app/actions/form-actions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Patient extends User {
   age: number;
@@ -19,6 +26,8 @@ export default function PatientsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -64,6 +73,20 @@ export default function PatientsPage() {
       patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       patient.condition.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedPatients = filteredPatients.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
 
   const handlePatientSubmission = async (
     state: unknown,
@@ -196,7 +219,7 @@ export default function PatientsPage() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {filteredPatients.map((patient) => (
+            {paginatedPatients.map((patient) => (
               <div
                 key={patient.id}
                 className="bg-card rounded-lg p-6 border border-border"
@@ -258,10 +281,85 @@ export default function PatientsPage() {
           </div>
         )}
 
+        {/* Pagination Controls */}
+        {!loading && filteredPatients.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Show</span>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                <SelectTrigger className="w-16 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span>of {filteredPatients.length} patients</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                {/* Page numbers */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <Button
+                        key={page}
+                        variant={page === currentPage ? "default" : "outline"}
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handlePageChange(page)}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  } else if (page === currentPage - 2 || page === currentPage + 2) {
+                    return (
+                      <span key={page} className="px-2 py-1 text-sm text-muted-foreground">
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                })}
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-muted/50 rounded-lg p-4 text-center">
           <p className="text-sm text-muted-foreground">
-            💻 This page uses Client Side Rendering (CSR) - Data is fetched in
-            the browser using React hooks
+            💻 This page uses Client Side Rendering (CSR) - Data is fetched in the browser with pagination
           </p>
         </div>
       </main>

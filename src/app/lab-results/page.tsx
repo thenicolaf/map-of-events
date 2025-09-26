@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { commentsApi } from "@/shared/api";
 import type { Comment } from "@/entities";
 import { LabResultActions } from "./LabResultActions";
+import { ClientLabPagination } from "./ClientLabPagination";
 
 interface LabResult extends Comment {
   testType: string;
@@ -94,58 +94,11 @@ export default async function LabResultsPage() {
           </div>
         </div>
 
-        <div className="grid gap-4">
-          {labResults.map((result) => (
-            <div key={result.id} className="bg-card rounded-lg p-6 border border-border">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold">{result.testType}</h3>
-                    <span className="text-lg">{getStatusIcon(result.status)}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Patient ID: {result.patientId} • Test ID: {result.id}
-                  </p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(result.status)}`}>
-                  {result.status.toUpperCase()}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Result Value</p>
-                  <p className="font-semibold">{result.result}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Reference Range</p>
-                  <p className="font-semibold">{result.reference}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Test Date</p>
-                  <p className="font-semibold">{result.date}</p>
-                </div>
-              </div>
-
-              {result.body && (
-                <div className="mb-4">
-                  <p className="text-sm text-muted-foreground mb-1">Doctor&apos;s Notes</p>
-                  <p className="text-sm bg-muted/50 p-3 rounded">{result.body}</p>
-                </div>
-              )}
-
-              <div className="flex items-center gap-2">
-                <Button size="sm">View Details</Button>
-                <Button size="sm" variant="outline">Download Report</Button>
-                <Button size="sm" variant="outline">Share</Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ClientLabPagination labResults={labResults} />
 
         <div className="bg-muted/50 rounded-lg p-4 text-center">
           <p className="text-sm text-muted-foreground">
-            🔄 This page uses Incremental Static Regeneration (ISR) - Statically generated but revalidated every 60 seconds
+            🔄 This page uses Incremental Static Regeneration (ISR) - Statically generated but revalidated every 60 seconds with client-side pagination
           </p>
         </div>
       </main>

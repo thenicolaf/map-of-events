@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { postsApi } from "@/shared/api";
 import type { Post } from "@/entities";
 import { AppointmentActions } from "./AppointmentActions";
+import { ClientPagination } from "./ClientPagination";
 
 interface Appointment extends Post {
   doctorName: string;
@@ -15,7 +15,7 @@ async function getAppointments(): Promise<Appointment[]> {
     const posts = await postsApi.getPosts();
 
     // Transform posts into appointments with additional fields
-    return posts.slice(0, 10).map((post, index) => ({
+    return posts.slice(0, 20).map((post, index) => ({
       ...post,
       doctorName: `Dr. ${
         ["Smith", "Johnson", "Brown", "Davis", "Miller"][index % 5]
@@ -64,51 +64,11 @@ export default async function AppointmentsPage() {
           </div>
         </div>
 
-        <div className="grid gap-4">
-          {appointments.map((appointment) => (
-            <div
-              key={appointment.id}
-              className="bg-card rounded-lg p-6 border border-border"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-1">{appointment.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Patient ID: {appointment.userId} • {appointment.doctorName}
-                  </p>
-                </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                    appointment.status
-                  )}`}
-                >
-                  {appointment.status}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                <span>📅 {appointment.date}</span>
-                <span>🕐 {appointment.time}</span>
-              </div>
-
-              <p className="text-sm">{appointment.body}</p>
-
-              <div className="flex items-center gap-2 mt-4">
-                <Button size="sm" variant="outline">
-                  View Details
-                </Button>
-                <Button size="sm" variant="outline">
-                  Reschedule
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ClientPagination appointments={appointments} />
 
         <div className="bg-muted/50 rounded-lg p-4 text-center">
           <p className="text-sm text-muted-foreground">
-            📊 This page uses Static Site Generation (SSG) - Data is fetched at
-            build time
+            📊 This page uses Static Site Generation (SSG) - Data is fetched at build time with client-side pagination
           </p>
         </div>
       </main>
