@@ -1,7 +1,6 @@
 'use client';
 
-import { Search, Bell, MessageCircle, Menu } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Bell, MessageCircle, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +11,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Sidebar } from '@/shared/ui/sidebar';
+import { PatientSearch } from './PatientSearch';
 
 export function Header() {
   return (
@@ -36,21 +36,15 @@ export function Header() {
 
           {/* Search */}
           <div className="flex-1 max-w-md mx-4 lg:mx-8 hidden sm:block">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search patients..."
-                className="pl-10 bg-muted/50"
-              />
-            </div>
+            <PatientSearch />
           </div>
 
           {/* Right side - Actions and Profile */}
           <div className="flex items-center gap-2 lg:gap-3">
             {/* Mobile Search */}
-            <Button variant="ghost" size="icon" className="sm:hidden">
-              <Search className="h-5 w-5" />
-            </Button>
+            <div className="sm:hidden">
+              <PatientSearch isMobile />
+            </div>
 
             {/* Theme Toggle */}
             <ModeToggle />
