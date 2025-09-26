@@ -3,16 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/shared/ui/modal";
 import { Calendar } from "lucide-react";
+import { submitAppointmentAction } from "@/app/actions/form-actions";
 
 export function AppointmentActions() {
-  const handleNewAppointment = async (formData: { patientName: string; appointmentNotes: string; documentFile: File | null }) => {
-    // Simulate adding a new appointment
-    console.log('New appointment created:', formData);
-    if (formData.documentFile) {
-      console.log('File uploaded:', formData.documentFile.name);
-    }
-  };
-
   return (
     <Modal
       trigger={
@@ -23,7 +16,11 @@ export function AppointmentActions() {
       }
       title="Schedule New Appointment"
       description="Enter patient information and appointment details."
-      onSubmit={handleNewAppointment}
+      action={submitAppointmentAction}
+      fieldLabel={{
+        patientName: 'Patient Name',
+        appointmentNotes: 'Appointment Details'
+      }}
     />
   );
 }

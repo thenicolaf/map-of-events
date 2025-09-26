@@ -3,16 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/shared/ui/modal";
 import { TestTube } from "lucide-react";
+import { submitLabTestAction } from "@/app/actions/form-actions";
 
 export function LabResultActions() {
-  const handleRequestTest = async (formData: { patientName: string; appointmentNotes: string; documentFile: File | null }) => {
-    // Simulate requesting a new lab test
-    console.log('Lab test requested:', formData);
-    if (formData.documentFile) {
-      console.log('File uploaded:', formData.documentFile.name);
-    }
-  };
-
   return (
     <Modal
       trigger={
@@ -23,7 +16,11 @@ export function LabResultActions() {
       }
       title="Request Lab Test"
       description="Enter patient information and test requirements. Upload any relevant medical history."
-      onSubmit={handleRequestTest}
+      action={submitLabTestAction}
+      fieldLabel={{
+        patientName: 'Patient Name',
+        appointmentNotes: 'Test Requirements'
+      }}
     />
   );
 }

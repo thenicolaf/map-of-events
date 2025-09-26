@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { usersApi, ApiError } from "@/shared/api";
 import type { User } from "@/entities";
 import { UserPlus } from "lucide-react";
+import { submitPatientAction } from "@/app/actions/form-actions";
 
 interface Patient extends User {
   age: number;
@@ -54,14 +55,16 @@ export default function PatientsPage() {
     patient.condition.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddPatient = async (formData: { patientName: string; appointmentNotes: string; documentFile: File | null }) => {
-    try {
-      // Simulate adding patient (in real app, this would be an API call)
+  const handlePatientSubmission = async (state: unknown, formData: FormData) => {
+    const result = await submitPatientAction(null, formData);
+
+    if (result.success && result.data) {
+      // Add to local patients list for UI update
       const newPatient: Patient = {
         id: Math.max(...patients.map(p => p.id), 0) + 1,
-        name: formData.patientName,
-        username: formData.patientName.toLowerCase().replace(/\s+/g, ''),
-        email: `${formData.patientName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+        name: result.data.patientName as string,
+        username: (result.data.patientName as string).toLowerCase().replace(/\s+/g, ''),
+        email: `${(result.data.patientName as string).toLowerCase().replace(/\s+/g, '.')}@example.com`,
         phone: '(555) 123-4567',
         website: 'example.com',
         address: {
@@ -85,16 +88,9 @@ export default function PatientsPage() {
       };
 
       setPatients(prev => [newPatient, ...prev]);
-
-      // Log form data for demonstration
-      console.log('New patient added:', formData);
-      if (formData.documentFile) {
-        console.log('File uploaded:', formData.documentFile.name);
-      }
-    } catch (error) {
-      console.error('Failed to add patient:', error);
-      throw error;
     }
+
+    return result;
   };
 
   const getConditionColor = (condition: string) => {
@@ -131,7 +127,7 @@ export default function PatientsPage() {
             }
             title="Add New Patient"
             description="Enter patient information and upload any relevant documents."
-            onSubmit={handleAddPatient}
+            action={handlePatientSubmission}
           />
         }
       />
