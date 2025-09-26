@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowLeft, LayoutDashboard, Calendar, Users, FileText, FlaskConical, Settings } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, Calendar, Users, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,7 @@ const navigationItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, count: null },
   { href: '/appointments', label: 'My Appointments', icon: Calendar, count: 5 },
   { href: '/patients', label: 'Patients', icon: Users, count: 12 },
-  { href: '/prescriptions', label: 'Prescriptions', icon: FileText, count: null },
   { href: '/lab-results', label: 'Lab Results', icon: FlaskConical, count: 3 },
-  { href: '/settings', label: 'Settings', icon: Settings, count: null },
 ];
 
 const summaryItems = [

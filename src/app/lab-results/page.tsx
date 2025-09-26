@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Navigation } from "@/shared/ui/navigation";
 import { commentsApi } from "@/shared/api";
 import type { Comment } from "@/entities";
 import { LabResultActions } from "./LabResultActions";
@@ -64,21 +63,19 @@ export default async function LabResultsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation
-        title="Lab Results"
-        actionButton={<LabResultActions />}
-      />
-
       <main className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold">Laboratory Test Results</h2>
+            <h1 className="text-2xl font-bold">Lab Results</h1>
             <p className="text-sm text-muted-foreground">
               Incremental Static Regeneration (ISR) - Revalidates every 60 seconds
             </p>
           </div>
-          <div className="text-sm text-muted-foreground">
-            Last updated: {currentTime}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Last updated: {currentTime}
+            </div>
+            <LabResultActions />
           </div>
         </div>
 

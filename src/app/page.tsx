@@ -67,7 +67,7 @@ const appointments = [
 const tasks = [
   { id: "1", title: "Call Maria Rodriguez about test results", time: "10:30 AM" },
   { id: "2", title: "Review John Smith's MRI scan", time: "10:30 AM" },
-  { id: "3", title: "Follow up with Emily Chen prescription", time: "2:00 PM" },
+  { id: "3", title: "Follow up with Emily Chen treatment plan", time: "2:00 PM" },
   { id: "4", title: "Complete weekly reports", time: "End of day", completed: true },
   { id: "5", title: "Check lab results for Robert Johnson", time: "2:00 PM" }
 ];

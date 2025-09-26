@@ -246,7 +246,6 @@ export type TaskType =
   | 'follow-up'
   | 'call-patient'
   | 'review-results'
-  | 'prescription-refill'
   | 'insurance-verification'
   | 'schedule-appointment'
   | 'documentation'
