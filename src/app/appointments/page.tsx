@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Navigation } from "@/shared/ui/navigation";
 import { postsApi } from "@/shared/api";
 import type { Post } from "@/entities";
+import { AppointmentActions } from "./AppointmentActions";
 
 interface Appointment extends Post {
   doctorName: string;
@@ -43,7 +44,7 @@ export default async function AppointmentsPage() {
     <div className="min-h-screen bg-background">
       <Navigation
         title="Appointments"
-        actionButton={<Button>New Appointment</Button>}
+        actionButton={<AppointmentActions />}
       />
 
       <main className="max-w-7xl mx-auto p-6 space-y-6">

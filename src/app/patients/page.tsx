@@ -2,9 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/shared/ui/navigation";
+import { Modal } from "@/shared/ui/modal";
 import { useState, useEffect } from "react";
 import { usersApi, ApiError } from "@/shared/api";
 import type { User } from "@/entities";
+import { UserPlus } from "lucide-react";
 
 interface Patient extends User {
   age: number;
@@ -52,6 +54,49 @@ export default function PatientsPage() {
     patient.condition.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleAddPatient = async (formData: { patientName: string; appointmentNotes: string; documentFile: File | null }) => {
+    try {
+      // Simulate adding patient (in real app, this would be an API call)
+      const newPatient: Patient = {
+        id: Math.max(...patients.map(p => p.id), 0) + 1,
+        name: formData.patientName,
+        username: formData.patientName.toLowerCase().replace(/\s+/g, ''),
+        email: `${formData.patientName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+        phone: '(555) 123-4567',
+        website: 'example.com',
+        address: {
+          street: '123 Main St',
+          suite: 'Apt. 1',
+          city: 'Anytown',
+          zipcode: '12345',
+          geo: {
+            lat: '40.7128',
+            lng: '-74.0060',
+          },
+        },
+        company: {
+          name: 'Health Insurance Co.',
+          catchPhrase: 'Your health, our priority',
+          bs: 'innovative healthcare solutions',
+        },
+        age: 25 + Math.floor(Math.random() * 50),
+        condition: 'Healthy',
+        lastVisit: new Date().toISOString().split('T')[0],
+      };
+
+      setPatients(prev => [newPatient, ...prev]);
+
+      // Log form data for demonstration
+      console.log('New patient added:', formData);
+      if (formData.documentFile) {
+        console.log('File uploaded:', formData.documentFile.name);
+      }
+    } catch (error) {
+      console.error('Failed to add patient:', error);
+      throw error;
+    }
+  };
+
   const getConditionColor = (condition: string) => {
     switch (condition.toLowerCase()) {
       case 'healthy': return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
@@ -76,7 +121,19 @@ export default function PatientsPage() {
     <div className="min-h-screen bg-background">
       <Navigation
         title="Patients"
-        actionButton={<Button>Add Patient</Button>}
+        actionButton={
+          <Modal
+            trigger={
+              <Button>
+                <UserPlus className="h-4 w-4" />
+                Add Patient
+              </Button>
+            }
+            title="Add New Patient"
+            description="Enter patient information and upload any relevant documents."
+            onSubmit={handleAddPatient}
+          />
+        }
       />
 
       <main className="max-w-7xl mx-auto p-6 space-y-6">

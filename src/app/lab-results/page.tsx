@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Navigation } from "@/shared/ui/navigation";
 import { commentsApi } from "@/shared/api";
 import type { Comment } from "@/entities";
+import { LabResultActions } from "./LabResultActions";
 
 interface LabResult extends Comment {
   testType: string;
@@ -65,7 +66,7 @@ export default async function LabResultsPage() {
     <div className="min-h-screen bg-background">
       <Navigation
         title="Lab Results"
-        actionButton={<Button>Request Test</Button>}
+        actionButton={<LabResultActions />}
       />
 
       <main className="max-w-7xl mx-auto p-6 space-y-6">

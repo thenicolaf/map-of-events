@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { Navigation } from "@/shared/ui/navigation";
 import { usersApi } from "@/shared/api";
 import type { User } from "@/entities";
+import { DashboardActions } from "./DashboardActions";
 
 interface DashboardData {
   users: User[];
@@ -39,7 +39,7 @@ export default async function Dashboard() {
     <div className="min-h-screen bg-background">
       <Navigation
         title="Medical Dashboard"
-        actionButton={<Button>Profile</Button>}
+        actionButton={<DashboardActions />}
       />
 
       <main className="max-w-7xl mx-auto p-6 space-y-6">
