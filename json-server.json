@@ -1,0 +1,16 @@
+{
+  "port": 3001,
+  "host": "localhost",
+  "watch": true,
+  "static": "./public",
+  "cors": true,
+  "noCors": false,
+  "bodyParser": true,
+  "logger": true,
+  "delay": 0,
+  "id": "id",
+  "foreignKeySuffix": "Id",
+  "quiet": false,
+  "snapshots": "./snapshots",
+  "middlewares": ["./json-server-middleware.js"]
+}

@@ -1,89 +1,94 @@
-import { usersApi } from "@/shared/api";
-import type { User } from "@/entities";
+import {
+  patientsApi,
+  appointmentsApi,
+  medicalTasksApi,
+  dashboardApi,
+  labResultsApi
+} from "@/shared/api";
+import type { Patient, Appointment, MedicalTask, LabResult } from "@/shared/types/medical";
+import type { DashboardStats } from "@/shared/api/dashboard";
 import { DashboardActions } from "./DashboardActions";
 import { AppointmentCard } from "@/shared/ui/appointment-card";
 import { StatsCard } from "@/shared/ui/stats-card";
-import { TasksSidebar } from "@/shared/ui/tasks-sidebar";
+import { ClientTaskManager } from "./ClientTaskManager";
 import { LabResultsTable } from "@/shared/ui/lab-results-table";
 
 interface DashboardData {
-  users: User[];
-  totalPatients: number;
-  totalAppointments: number;
-  timestamp: string;
+  patients: Patient[];
+  todaysAppointments: Appointment[];
+  pendingTasks: MedicalTask[];
+  completedTasks: MedicalTask[];
+  stats: DashboardStats;
+  labResults: LabResult[];
 }
 
 async function getDashboardData(): Promise<DashboardData> {
   try {
-    const users = await usersApi.getUsers();
+    // Fetch all data in parallel for better performance
+    const [patients, appointments, tasks, stats, labResults] = await Promise.all([
+      patientsApi.getPatients(),
+      appointmentsApi.getTodaysAppointments(),
+      medicalTasksApi.getMedicalTasks(),
+      dashboardApi.getDashboardStats(),
+      labResultsApi.getLabResults()
+    ]);
+
+    const pendingTasks = tasks.filter(task => task.status === 'pending');
+    const completedTasks = tasks.filter(task => task.status === 'completed');
 
     return {
-      users: users.slice(0, 5), // Show first 5 users as recent patients
-      totalPatients: users.length,
-      totalAppointments: Math.floor(Math.random() * 50) + 20, // Mock appointments count
-      timestamp: new Date().toISOString(),
+      patients: patients.slice(0, 5), // Show first 5 patients as recent
+      todaysAppointments: appointments.slice(0, 3), // Show first 3 today's appointments
+      pendingTasks,
+      completedTasks,
+      stats,
+      labResults: labResults.slice(0, 10), // Show recent lab results
     };
   } catch (error) {
     console.error("Failed to fetch dashboard data:", error);
     // Fallback data in case of API failure
     return {
-      users: [],
-      totalPatients: 0,
-      totalAppointments: 0,
-      timestamp: new Date().toISOString(),
+      patients: [],
+      todaysAppointments: [],
+      pendingTasks: [],
+      completedTasks: [],
+      stats: {
+        activePatients: 0,
+        criticalAlerts: 0,
+        admissionsToday: 0,
+        pendingTasks: 0,
+        completedTasks: 0,
+        appointmentsToday: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      labResults: [],
     };
   }
 }
 
-// Mock data for appointments
-const appointments = [
-  {
-    id: "apt-1",
-    type: "Routine Checkup",
-    status: "active" as const,
-    patient: { name: "Maria Rodriguez", initials: "MR" },
-    time: "09:00",
-    duration: "30 min",
-  },
-  {
-    id: "apt-2",
-    type: "Heart Follow-up",
-    status: "progress" as const,
-    patient: { name: "John Smith", initials: "JS" },
-    time: "09:30",
-    duration: "45 min",
-  },
-  {
-    id: "apt-3",
-    type: "Consultation",
-    status: "scheduled" as const,
-    patient: { name: "Emily Chen", initials: "EC" },
-    time: "10:15",
-    duration: "60 min",
-  },
-];
+// Helper function to transform appointment data for AppointmentCard component
+function transformAppointmentForCard(appointment: Appointment) {
+  const date = new Date(appointment.dateTime);
+  const time = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
 
-// Mock data for tasks
-const tasks = [
-  {
-    id: "1",
-    title: "Call Maria Rodriguez about test results",
-    time: "10:30 AM",
-  },
-  { id: "2", title: "Review John Smith's MRI scan", time: "10:30 AM" },
-  {
-    id: "3",
-    title: "Follow up with Emily Chen treatment plan",
-    time: "2:00 PM",
-  },
-  {
-    id: "4",
-    title: "Complete weekly reports",
-    time: "End of day",
-    completed: true,
-  },
-  { id: "5", title: "Check lab results for Robert Johnson", time: "2:00 PM" },
-];
+  return {
+    id: appointment.id,
+    type: appointment.reason,
+    status: appointment.status === 'in-progress' ? 'progress' as const :
+            appointment.status === 'scheduled' ? 'scheduled' as const : 'active' as const,
+    patient: {
+      name: appointment.patient.fullName,
+      initials: `${appointment.patient.firstName[0]}${appointment.patient.lastName[0]}`
+    },
+    time,
+    duration: `${appointment.duration} min`,
+  };
+}
+
 
 export default async function Dashboard() {
   const data = await getDashboardData();
@@ -103,9 +108,15 @@ export default async function Dashboard() {
             Today&apos;s Appointments
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {appointments.map((appointment) => (
-              <AppointmentCard key={appointment.id} {...appointment} />
-            ))}
+            {data.todaysAppointments.length > 0 ? (
+              data.todaysAppointments.map((appointment) => (
+                <AppointmentCard key={appointment.id} {...transformAppointmentForCard(appointment)} />
+              ))
+            ) : (
+              <div className="col-span-3 text-center text-muted-foreground p-8">
+                No appointments scheduled for today
+              </div>
+            )}
           </div>
         </div>
 
@@ -113,12 +124,12 @@ export default async function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatsCard
             title="Active Patients"
-            value={247}
+            value={data.stats.activePatients}
             change={{ value: 12, type: "increase", timeframe: "+12 this week" }}
           />
           <StatsCard
             title="Critical Alerts"
-            value={3}
+            value={data.stats.criticalAlerts}
             change={{
               value: 2,
               type: "decrease",
@@ -127,7 +138,7 @@ export default async function Dashboard() {
           />
           <StatsCard
             title="Admissions Today"
-            value={2}
+            value={data.stats.admissionsToday}
             change={{
               value: 2,
               type: "increase",
@@ -143,17 +154,17 @@ export default async function Dashboard() {
         <div className="bg-card rounded-lg p-6 border border-border">
           <h3 className="text-lg font-semibold mb-4">Recent Patients (SSR)</h3>
           <div className="space-y-3">
-            {data.users.map((user) => (
+            {data.patients.map((patient) => (
               <div
-                key={user.id}
+                key={patient.id}
                 className="flex items-center justify-between p-3 bg-muted rounded-lg"
               >
                 <div>
-                  <p className="font-medium">{user.name}</p>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                  <p className="font-medium">{patient.fullName}</p>
+                  <p className="text-sm text-muted-foreground">{patient.email}</p>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {user.phone}
+                  {patient.phone}
                 </div>
               </div>
             ))}
@@ -163,7 +174,9 @@ export default async function Dashboard() {
 
       {/* Right Sidebar - Hidden on mobile and tablets */}
       <div className="hidden xl:block">
-        <TasksSidebar tasks={tasks} pendingCount={5} />
+        <ClientTaskManager
+          initialTasks={[...data.pendingTasks, ...data.completedTasks]}
+        />
       </div>
     </div>
   );

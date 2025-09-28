@@ -1,4 +1,6 @@
-export const API_BASE_URL = "https://jsonplaceholder.typicode.com"
+export const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? "https://api.yourdomain.com"
+  : "http://localhost:3001"
 
 export type ApiResponse<T> = {
   data: T
@@ -74,6 +76,15 @@ class HttpClient {
 
 export const httpClient = new HttpClient(API_BASE_URL)
 
+// Legacy exports (will be replaced)
 export * from './users'
 export * from './posts'
 export * from './comments'
+
+// New medical API exports
+export * from './patients'
+export * from './doctors'
+export * from './appointments'
+export * from './labResults'
+export * from './medicalTasks'
+export * from './dashboard'

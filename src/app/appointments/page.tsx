@@ -1,31 +1,12 @@
-import { postsApi } from "@/shared/api";
-import type { Post } from "@/entities";
+import { appointmentsApi } from "@/shared/api";
+import type { Appointment } from "@/shared/types/medical";
 import { AppointmentActions } from "./AppointmentActions";
 import { ClientPagination } from "./ClientPagination";
 
-interface Appointment extends Post {
-  doctorName: string;
-  date: string;
-  time: string;
-  status: "scheduled" | "completed" | "cancelled";
-}
-
 async function getAppointments(): Promise<Appointment[]> {
   try {
-    const posts = await postsApi.getPosts();
-
-    // Transform posts into appointments with additional fields
-    return posts.slice(0, 20).map((post, index) => ({
-      ...post,
-      doctorName: `Dr. ${
-        ["Smith", "Johnson", "Brown", "Davis", "Miller"][index % 5]
-      }`,
-      date: new Date(Date.now() + index * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-      time: `${9 + Math.floor(index / 2)}:${index % 2 === 0 ? "00" : "30"}`,
-      status: (["scheduled", "completed", "cancelled"] as const)[index % 3],
-    }));
+    const appointments = await appointmentsApi.getAppointments();
+    return appointments;
   } catch (error) {
     console.error("Failed to fetch appointments:", error);
     return []; // Return empty array on error for SSG fallback
@@ -34,17 +15,6 @@ async function getAppointments(): Promise<Appointment[]> {
 
 export default async function AppointmentsPage() {
   const appointments = await getAppointments();
-
-  const getStatusColor = (status: Appointment["status"]) => {
-    switch (status) {
-      case "scheduled":
-        return "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30";
-      case "completed":
-        return "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30";
-      case "cancelled":
-        return "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30";
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">

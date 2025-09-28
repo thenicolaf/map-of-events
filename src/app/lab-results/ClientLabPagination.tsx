@@ -10,27 +10,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-interface LabResult {
-  id: number;
-  email: string;
-  name: string;
-  body: string;
-  postId: number;
-  testType: string;
-  result: string;
-  status: 'normal' | 'abnormal' | 'critical';
-  date: string;
-  patientId: number;
-  reference: string;
-}
+import type { LabResult } from "@/shared/types/medical";
 
 interface ClientLabPaginationProps {
   labResults: LabResult[];
 }
 
 export function ClientLabPagination({ labResults }: ClientLabPaginationProps) {
-  const getStatusColor = (status: LabResult['status']) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Helper function to get result status from test results
+  const getResultStatus = (labResult: LabResult): 'normal' | 'abnormal' | 'critical' => {
+    if (labResult.status === 'critical') return 'critical';
+    const hasCritical = labResult.results.some(r => r.status === 'critical');
+    if (hasCritical) return 'critical';
+    const hasAbnormal = labResult.results.some(r => r.status === 'abnormal' || r.status === 'high' || r.status === 'low');
+    if (hasAbnormal) return 'abnormal';
+    return 'normal';
+  };
+
+  const getStatusColor = (status: 'normal' | 'abnormal' | 'critical') => {
     switch (status) {
       case 'normal': return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
       case 'abnormal': return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
@@ -38,25 +40,39 @@ export function ClientLabPagination({ labResults }: ClientLabPaginationProps) {
     }
   };
 
-  const getStatusIcon = (status: LabResult['status']) => {
+  const getStatusIcon = (status: 'normal' | 'abnormal' | 'critical') => {
     switch (status) {
       case 'normal': return '✅';
       case 'abnormal': return '⚠️';
       case 'critical': return '🚨';
     }
   };
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Filter and search logic
+  const filteredResults = labResults.filter((result) => {
+    const matchesSearch =
+      result.testType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      result.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      result.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      result.results.some(r => r.parameter.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              r.value.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (result.notes && result.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const resultStatus = getResultStatus(result);
+    const matchesStatus = statusFilter === "all" || resultStatus === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   // Pagination logic
-  const totalPages = Math.ceil(labResults.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedResults = labResults.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedResults = filteredResults.slice(startIndex, startIndex + itemsPerPage);
 
-  // Reset to first page when itemsPerPage changes
+  // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [itemsPerPage]);
+  }, [searchTerm, statusFilter, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -64,6 +80,28 @@ export function ClientLabPagination({ labResults }: ClientLabPaginationProps) {
 
   return (
     <>
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search lab results by test type, patient ID, or notes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+        />
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Results</SelectItem>
+            <SelectItem value="normal">Normal</SelectItem>
+            <SelectItem value="abnormal">Abnormal</SelectItem>
+            <SelectItem value="critical">Critical</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid gap-4">
         {paginatedResults.map((result) => (
           <div key={result.id} className="bg-card rounded-lg p-6 border border-border">
@@ -71,36 +109,63 @@ export function ClientLabPagination({ labResults }: ClientLabPaginationProps) {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="font-semibold">{result.testType}</h3>
-                  <span className="text-lg">{getStatusIcon(result.status)}</span>
+                  <span className="text-lg">{getStatusIcon(getResultStatus(result))}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Patient ID: {result.patientId} • Test ID: {result.id}
                 </p>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(result.status)}`}>
-                {result.status.toUpperCase()}
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(getResultStatus(result))}`}>
+                {getResultStatus(result).toUpperCase()}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Result Value</p>
-                <p className="font-semibold">{result.result}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Reference Range</p>
-                <p className="font-semibold">{result.reference}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Test Date</p>
-                <p className="font-semibold">{result.date}</p>
+            {/* Lab Results Details */}
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground mb-2">Test Results</p>
+              <div className="space-y-2">
+                {result.results.map((testResult, index) => (
+                  <div key={index} className="flex justify-between items-center bg-muted/30 p-2 rounded">
+                    <div>
+                      <span className="font-medium text-sm">{testResult.parameter}</span>
+                      <span className={`ml-2 text-xs px-2 py-1 rounded ${
+                        testResult.status === 'normal' ? 'bg-green-100 text-green-800' :
+                        testResult.status === 'critical' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {testResult.status}
+                      </span>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div className="font-semibold">
+                        {testResult.value} {testResult.unit}
+                      </div>
+                      <div className="text-muted-foreground text-xs">
+                        Ref: {testResult.referenceRange}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {result.body && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Ordered Date</p>
+                <p className="font-semibold">{new Date(result.orderedDate).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Result Date</p>
+                <p className="font-semibold">
+                  {result.resultDate ? new Date(result.resultDate).toLocaleDateString() : 'Pending'}
+                </p>
+              </div>
+            </div>
+
+            {result.notes && (
               <div className="mb-4">
-                <p className="text-sm text-muted-foreground mb-1">Doctor&apos;s Notes</p>
-                <p className="text-sm bg-muted/50 p-3 rounded">{result.body}</p>
+                <p className="text-sm text-muted-foreground mb-1">Notes</p>
+                <p className="text-sm bg-muted/50 p-3 rounded">{result.notes}</p>
               </div>
             )}
 
@@ -129,7 +194,7 @@ export function ClientLabPagination({ labResults }: ClientLabPaginationProps) {
                 <SelectItem value="50">50</SelectItem>
               </SelectContent>
             </Select>
-            <span>of {labResults.length} results</span>
+            <span>of {filteredResults.length} results</span>
           </div>
 
           <div className="flex items-center gap-2">

@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/shared/ui/modal";
 import { useState, useEffect } from "react";
-import { usersApi, ApiError } from "@/shared/api";
-import type { User } from "@/entities";
+import { patientsApi, ApiError } from "@/shared/api";
+import type { Patient } from "@/shared/types/medical";
 import { UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { submitPatientAction } from "@/app/actions/form-actions";
 import {
@@ -14,12 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-interface Patient extends User {
-  age: number;
-  condition: string;
-  lastVisit: string;
-}
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -33,27 +27,8 @@ export default function PatientsPage() {
     const fetchPatients = async () => {
       try {
         setLoading(true);
-        const users = await usersApi.getUsers();
-
-        // Transform users into patients with additional medical fields
-        const transformedPatients: Patient[] = users.map((user, index) => ({
-          ...user,
-          age: 25 + Math.floor(Math.random() * 50),
-          condition: [
-            "Hypertension",
-            "Diabetes",
-            "Asthma",
-            "Healthy",
-            "Arthritis",
-          ][index % 5],
-          lastVisit: new Date(
-            Date.now() - Math.floor(Math.random() * 90) * 24 * 60 * 60 * 1000
-          )
-            .toISOString()
-            .split("T")[0],
-        }));
-
-        setPatients(transformedPatients);
+        const patientsData = await patientsApi.getPatients();
+        setPatients(patientsData);
       } catch (err) {
         const errorMessage =
           err instanceof ApiError
@@ -70,8 +45,14 @@ export default function PatientsPage() {
 
   const filteredPatients = patients.filter(
     (patient) =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.condition.toLowerCase().includes(searchTerm.toLowerCase())
+      patient.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.phone.includes(searchTerm) ||
+      patient.medicalHistory.some(history =>
+        history.condition.toLowerCase().includes(searchTerm.toLowerCase())
+      )
   );
 
   // Pagination logic
@@ -89,42 +70,48 @@ export default function PatientsPage() {
   };
 
   const handlePatientSubmission = async (
-    state: unknown,
+    _state: unknown,
     formData: FormData
   ) => {
     const result = await submitPatientAction(null, formData);
 
     if (result.success && result.data) {
-      // Add to local patients list for UI update
+      // Create a proper patient object that matches the medical schema
+      const patientName = result.data.patientName as string;
+      const [firstName, ...lastNameParts] = patientName.split(' ');
+      const lastName = lastNameParts.join(' ') || firstName;
+
       const newPatient: Patient = {
-        id: Math.max(...patients.map((p) => p.id), 0) + 1,
-        name: result.data.patientName as string,
-        username: (result.data.patientName as string)
-          .toLowerCase()
-          .replace(/\s+/g, ""),
-        email: `${(result.data.patientName as string)
-          .toLowerCase()
-          .replace(/\s+/g, ".")}@example.com`,
+        id: `P-${Date.now()}`,
+        firstName,
+        lastName,
+        fullName: patientName,
+        email: `${patientName.toLowerCase().replace(/\s+/g, ".")}@example.com`,
         phone: "(555) 123-4567",
-        website: "example.com",
+        dateOfBirth: "1990-01-01",
+        gender: "other" as const,
         address: {
           street: "123 Main St",
-          suite: "Apt. 1",
-          city: "Anytown",
-          zipcode: "12345",
-          geo: {
-            lat: "40.7128",
-            lng: "-74.0060",
-          },
+          city: "Boston",
+          state: "MA",
+          zipCode: "02101",
+          country: "USA"
         },
-        company: {
-          name: "Health Insurance Co.",
-          catchPhrase: "Your health, our priority",
-          bs: "innovative healthcare solutions",
+        emergencyContact: {
+          name: "Emergency Contact",
+          relationship: "family",
+          phone: "(555) 987-6543"
         },
-        age: 25 + Math.floor(Math.random() * 50),
-        condition: "Healthy",
-        lastVisit: new Date().toISOString().split("T")[0],
+        medicalHistory: [],
+        allergies: [],
+        medications: [],
+        insuranceInfo: {
+          provider: "Health Insurance Co.",
+          policyNumber: `POL-${Date.now()}`,
+          expirationDate: "2024-12-31"
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       setPatients((prev) => [newPatient, ...prev]);
@@ -136,14 +123,39 @@ export default function PatientsPage() {
   const getConditionColor = (condition: string) => {
     switch (condition.toLowerCase()) {
       case "healthy":
+      case "normal":
         return "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30";
       case "hypertension":
+      case "high blood pressure":
         return "text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30";
       case "diabetes":
+      case "type 2 diabetes":
+        return "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30";
+      case "asthma":
+        return "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30";
+      case "coronary artery disease":
         return "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30";
       default:
-        return "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30";
+        return "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30";
     }
+  };
+
+  // Helper function to get primary condition from medical history
+  const getPrimaryCondition = (patient: Patient): string => {
+    if (patient.medicalHistory.length === 0) return "Healthy";
+    return patient.medicalHistory[0].condition;
+  };
+
+  // Helper function to calculate age from date of birth
+  const calculateAge = (dateOfBirth: string): number => {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
   };
 
   if (error) {
@@ -219,65 +231,74 @@ export default function PatientsPage() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {paginatedPatients.map((patient) => (
-              <div
-                key={patient.id}
-                className="bg-card rounded-lg p-6 border border-border"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-1">{patient.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Age: {patient.age} • ID: {patient.id}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${getConditionColor(
-                      patient.condition
-                    )}`}
-                  >
-                    {patient.condition}
-                  </span>
-                </div>
+            {paginatedPatients.map((patient) => {
+              const primaryCondition = getPrimaryCondition(patient);
+              const age = calculateAge(patient.dateOfBirth);
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p>
-                      <span className="font-medium">Email:</span>{" "}
-                      {patient.email}
-                    </p>
-                    <p>
-                      <span className="font-medium">Phone:</span>{" "}
-                      {patient.phone}
-                    </p>
-                    <p>
-                      <span className="font-medium">Last Visit:</span>{" "}
-                      {patient.lastVisit}
-                    </p>
+              return (
+                <div
+                  key={patient.id}
+                  className="bg-card rounded-lg p-6 border border-border"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-1">{patient.fullName}</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Age: {age} • ID: {patient.id} • {patient.gender}
+                      </p>
+                    </div>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getConditionColor(
+                        primaryCondition
+                      )}`}
+                    >
+                      {primaryCondition}
+                    </span>
                   </div>
-                  <div>
-                    <p>
-                      <span className="font-medium">Address:</span>{" "}
-                      {patient.address.street}, {patient.address.city}
-                    </p>
-                    <p>
-                      <span className="font-medium">Insurance:</span>{" "}
-                      {patient.company.name}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2 mt-4">
-                  <Button size="sm">View Records</Button>
-                  <Button size="sm" variant="outline">
-                    Schedule
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    Message
-                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p>
+                        <span className="font-medium">Email:</span>{" "}
+                        {patient.email}
+                      </p>
+                      <p>
+                        <span className="font-medium">Phone:</span>{" "}
+                        {patient.phone}
+                      </p>
+                      <p>
+                        <span className="font-medium">DOB:</span>{" "}
+                        {new Date(patient.dateOfBirth).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p>
+                        <span className="font-medium">Address:</span>{" "}
+                        {patient.address.street}, {patient.address.city}
+                      </p>
+                      <p>
+                        <span className="font-medium">Insurance:</span>{" "}
+                        {patient.insuranceInfo.provider}
+                      </p>
+                      <p>
+                        <span className="font-medium">Emergency:</span>{" "}
+                        {patient.emergencyContact.name} ({patient.emergencyContact.phone})
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-4">
+                    <Button size="sm">View Records</Button>
+                    <Button size="sm" variant="outline">
+                      Schedule
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      Message
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

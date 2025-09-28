@@ -1,64 +1,30 @@
-import { commentsApi } from "@/shared/api";
-import type { Comment } from "@/entities";
+import { labResultsApi } from "@/shared/api";
+import type { LabResult } from "@/shared/types/medical";
 import { LabResultActions } from "./LabResultActions";
 import { ClientLabPagination } from "./ClientLabPagination";
 
-interface LabResult extends Comment {
-  testType: string;
-  result: string;
-  status: 'normal' | 'abnormal' | 'critical';
-  date: string;
-  patientId: number;
-  reference: string;
-}
-
 async function getLabResults(): Promise<LabResult[]> {
   try {
-    const comments = await commentsApi.getComments();
-
-    const testTypes = ['Blood Glucose', 'Cholesterol', 'Blood Pressure', 'Hemoglobin', 'Creatinine', 'Liver Function'];
-    const references = ['70-100 mg/dL', '<200 mg/dL', '120/80 mmHg', '12-16 g/dL', '0.6-1.2 mg/dL', 'Normal'];
-
-    // Transform comments into lab results with additional medical fields
-    return comments.slice(0, 15).map((comment, index) => ({
-      ...comment,
-      testType: testTypes[index % testTypes.length],
-      result: generateResult(index),
-      status: (['normal', 'abnormal', 'critical'] as const)[index % 3],
-      date: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
-        .toISOString().split('T')[0],
-      patientId: comment.postId,
-      reference: references[index % references.length]
-    }));
+    const labResults = await labResultsApi.getLabResults();
+    return labResults;
   } catch (error) {
     console.error('Failed to fetch lab results:', error);
     return []; // Return empty array on error for ISR fallback
   }
 }
 
-function generateResult(index: number): string {
-  const results = ['85 mg/dL', '180 mg/dL', '140/90 mmHg', '14.2 g/dL', '1.1 mg/dL', 'Elevated'];
-  return results[index % results.length];
-}
-
 export default async function LabResultsPage() {
   const labResults = await getLabResults();
   const currentTime = new Date().toLocaleString();
 
-  const getStatusColor = (status: LabResult['status']) => {
-    switch (status) {
-      case 'normal': return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
-      case 'abnormal': return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
-      case 'critical': return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
-    }
-  };
-
-  const getStatusIcon = (status: LabResult['status']) => {
-    switch (status) {
-      case 'normal': return '✅';
-      case 'abnormal': return '⚠️';
-      case 'critical': return '🚨';
-    }
+  // Helper function to get result status from test results
+  const getResultStatus = (labResult: LabResult): 'normal' | 'abnormal' | 'critical' => {
+    if (labResult.status === 'critical') return 'critical';
+    const hasCritical = labResult.results.some(r => r.status === 'critical');
+    if (hasCritical) return 'critical';
+    const hasAbnormal = labResult.results.some(r => r.status === 'abnormal' || r.status === 'high' || r.status === 'low');
+    if (hasAbnormal) return 'abnormal';
+    return 'normal';
   };
 
   return (
@@ -82,15 +48,15 @@ export default async function LabResultsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-card rounded-lg p-4 border border-border">
             <h3 className="font-semibold text-green-600">Normal Results</h3>
-            <p className="text-2xl font-bold">{labResults.filter(r => r.status === 'normal').length}</p>
+            <p className="text-2xl font-bold">{labResults.filter(r => getResultStatus(r) === 'normal').length}</p>
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <h3 className="font-semibold text-yellow-600">Abnormal Results</h3>
-            <p className="text-2xl font-bold">{labResults.filter(r => r.status === 'abnormal').length}</p>
+            <p className="text-2xl font-bold">{labResults.filter(r => getResultStatus(r) === 'abnormal').length}</p>
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <h3 className="font-semibold text-red-600">Critical Results</h3>
-            <p className="text-2xl font-bold">{labResults.filter(r => r.status === 'critical').length}</p>
+            <p className="text-2xl font-bold">{labResults.filter(r => getResultStatus(r) === 'critical').length}</p>
           </div>
         </div>
 
