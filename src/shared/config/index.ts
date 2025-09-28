@@ -13,6 +13,6 @@ export const THEME_CONFIG = {
 
 // API configuration
 export const API_CONFIG = {
-  baseUrl: "https://jsonplaceholder.typicode.com",
+  baseUrl: "http://localhost:3001",
   timeout: 5000,
 } as const

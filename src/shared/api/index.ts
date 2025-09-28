@@ -76,10 +76,7 @@ class HttpClient {
 
 export const httpClient = new HttpClient(API_BASE_URL)
 
-// Legacy exports (will be replaced)
-export * from './users'
-export * from './posts'
-export * from './comments'
+// Legacy exports removed - using new medical API structure
 
 // New medical API exports
 export * from './patients'
