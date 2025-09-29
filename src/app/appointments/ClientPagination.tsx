@@ -10,17 +10,69 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchFilter } from '@/shared/ui/search-filter';
+import { useUnifiedSearch } from '@/shared/hooks';
 import type { Appointment } from "@/shared/types/medical";
+import type { SearchFilterOption } from '@/shared/types/search';
+import { MEDICAL_FILTERS } from '@/shared/types/search';
 
 interface ClientPaginationProps {
   appointments: Appointment[];
 }
 
 export function ClientPagination({ appointments }: ClientPaginationProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Define search fields and filters for appointments
+  const searchFields = [
+    'reason',
+    'patient.fullName',
+    'doctor.fullName',
+    'location',
+    'notes',
+    'type'
+  ];
+
+  const filters: SearchFilterOption[] = [
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [...MEDICAL_FILTERS.STATUS.APPOINTMENT]
+    },
+    {
+      key: 'type',
+      label: 'Appointment Type',
+      type: 'select',
+      options: [...MEDICAL_FILTERS.APPOINTMENT_TYPE]
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      type: 'select',
+      options: [...MEDICAL_FILTERS.PRIORITY]
+    },
+    {
+      key: 'dateTime',
+      label: 'Date',
+      type: 'date'
+    }
+  ];
+
+  // Use unified search hook
+  const {
+    searchQuery,
+    filters: activeFilters,
+    filteredData: filteredAppointments,
+    setSearchQuery,
+    setFilters,
+    clearAll
+  } = useUnifiedSearch({
+    data: appointments,
+    searchFields,
+    caseSensitive: false
+  });
 
   const getStatusColor = (status: Appointment["status"]) => {
     switch (status) {
@@ -43,19 +95,6 @@ export function ClientPagination({ appointments }: ClientPaginationProps) {
     }
   };
 
-  // Filter and search logic
-  const filteredAppointments = appointments.filter((appointment) => {
-    const matchesSearch =
-      appointment.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.patient.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.doctor.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (appointment.notes && appointment.notes.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    const matchesStatus = statusFilter === "all" || appointment.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
 
   // Pagination logic
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
@@ -65,7 +104,7 @@ export function ClientPagination({ appointments }: ClientPaginationProps) {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, itemsPerPage]);
+  }, [searchQuery, activeFilters, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -73,30 +112,17 @@ export function ClientPagination({ appointments }: ClientPaginationProps) {
 
   return (
     <>
-      {/* Search and Filter Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search appointments by patient, doctor, reason, or location..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+      {/* Enhanced Search and Filter Controls */}
+      <div className="mb-6">
+        <SearchFilter
+          searchFields={searchFields}
+          searchPlaceholder="Search appointments by patient, doctor, reason, location, or notes..."
+          filters={filters}
+          onSearch={setSearchQuery}
+          onFilter={setFilters}
+          onClear={clearAll}
+          defaultSearchValue=""
         />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="scheduled">Scheduled</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="in-progress">In Progress</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-            <SelectItem value="no-show">No Show</SelectItem>
-            <SelectItem value="rescheduled">Rescheduled</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="grid gap-4">

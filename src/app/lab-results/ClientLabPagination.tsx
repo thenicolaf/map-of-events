@@ -10,17 +10,70 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchFilter } from '@/shared/ui/search-filter';
+import { useUnifiedSearch } from '@/shared/hooks';
 import type { LabResult } from "@/shared/types/medical";
+import type { SearchFilterOption } from '@/shared/types/search';
+import { MEDICAL_FILTERS } from '@/shared/types/search';
 
 interface ClientLabPaginationProps {
   labResults: LabResult[];
 }
 
 export function ClientLabPagination({ labResults }: ClientLabPaginationProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Define search fields and filters for lab results
+  const searchFields = [
+    'testType',
+    'patientId',
+    'id',
+    'results.parameter',
+    'results.value',
+    'notes',
+    'status'
+  ];
+
+  const filters: SearchFilterOption[] = [
+    {
+      key: 'status',
+      label: 'Result Status',
+      type: 'select',
+      options: [...MEDICAL_FILTERS.STATUS.LAB_RESULT]
+    },
+    {
+      key: 'testType',
+      label: 'Lab Category',
+      type: 'select',
+      options: [...MEDICAL_FILTERS.LAB_CATEGORY]
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      type: 'select',
+      options: [...MEDICAL_FILTERS.PRIORITY]
+    },
+    {
+      key: 'orderedDate',
+      label: 'Ordered Date',
+      type: 'date'
+    }
+  ];
+
+  // Use unified search hook
+  const {
+    searchQuery,
+    filters: activeFilters,
+    filteredData: filteredResults,
+    setSearchQuery,
+    setFilters,
+    clearAll
+  } = useUnifiedSearch({
+    data: labResults,
+    searchFields,
+    caseSensitive: false
+  });
 
   // Helper function to get result status from test results
   const getResultStatus = (labResult: LabResult): 'normal' | 'abnormal' | 'critical' => {
@@ -48,22 +101,6 @@ export function ClientLabPagination({ labResults }: ClientLabPaginationProps) {
     }
   };
 
-  // Filter and search logic
-  const filteredResults = labResults.filter((result) => {
-    const matchesSearch =
-      result.testType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.results.some(r => r.parameter.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              r.value.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (result.notes && result.notes.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    const resultStatus = getResultStatus(result);
-    const matchesStatus = statusFilter === "all" || resultStatus === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
   // Pagination logic
   const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -72,7 +109,7 @@ export function ClientLabPagination({ labResults }: ClientLabPaginationProps) {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, itemsPerPage]);
+  }, [searchQuery, activeFilters, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -80,26 +117,17 @@ export function ClientLabPagination({ labResults }: ClientLabPaginationProps) {
 
   return (
     <>
-      {/* Search and Filter Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search lab results by test type, patient ID, or notes..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+      {/* Enhanced Search and Filter Controls */}
+      <div className="mb-6">
+        <SearchFilter
+          searchFields={searchFields}
+          searchPlaceholder="Search lab results by test type, patient ID, parameters, values, or notes..."
+          filters={filters}
+          onSearch={setSearchQuery}
+          onFilter={setFilters}
+          onClear={clearAll}
+          defaultSearchValue=""
         />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Results</SelectItem>
-            <SelectItem value="normal">Normal</SelectItem>
-            <SelectItem value="abnormal">Abnormal</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="grid gap-4">

@@ -12,6 +12,7 @@ import { AppointmentCard } from "@/shared/ui/appointment-card";
 import { StatsCard } from "@/shared/ui/stats-card";
 import { ClientTaskManager } from "./ClientTaskManager";
 import { LabResultsTable } from "@/shared/ui/lab-results-table";
+import { GlobalSearch } from "./GlobalSearch";
 
 interface DashboardData {
   patients: Patient[];
@@ -20,6 +21,11 @@ interface DashboardData {
   completedTasks: MedicalTask[];
   stats: DashboardStats;
   labResults: LabResult[];
+  // All data for global search
+  allPatients: Patient[];
+  allAppointments: Appointment[];
+  allTasks: MedicalTask[];
+  allLabResults: LabResult[];
 }
 
 async function getDashboardData(): Promise<DashboardData> {
@@ -43,6 +49,11 @@ async function getDashboardData(): Promise<DashboardData> {
       completedTasks,
       stats,
       labResults: labResults.slice(0, 10), // Show recent lab results
+      // Also include all data for global search
+      allPatients: patients,
+      allAppointments: appointments,
+      allTasks: tasks,
+      allLabResults: labResults,
     };
   } catch (error) {
     console.error("Failed to fetch dashboard data:", error);
@@ -62,6 +73,10 @@ async function getDashboardData(): Promise<DashboardData> {
         lastUpdated: new Date().toISOString(),
       },
       labResults: [],
+      allPatients: [],
+      allAppointments: [],
+      allTasks: [],
+      allLabResults: [],
     };
   }
 }
@@ -98,9 +113,22 @@ export default async function Dashboard() {
       <div className="flex-1 p-6 space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Doctor&apos;s Dashboard</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Doctor&apos;s Dashboard</h1>
+            <p className="text-sm text-muted-foreground">
+              Server Side Rendering (SSR) - Data fetched on server with global search
+            </p>
+          </div>
           <DashboardActions />
         </div>
+
+        {/* Global Search */}
+        <GlobalSearch
+          patients={data.allPatients}
+          appointments={data.allAppointments}
+          tasks={[...data.pendingTasks, ...data.completedTasks]}
+          labResults={data.allLabResults}
+        />
 
         {/* Today's Appointments */}
         <div>

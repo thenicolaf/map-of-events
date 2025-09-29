@@ -14,14 +14,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchFilter } from '@/shared/ui/search-filter';
+import { useUnifiedSearch } from '@/shared/hooks';
+import type { SearchFilterOption } from '@/shared/types/search';
+import { MEDICAL_FILTERS } from '@/shared/types/search';
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Define search fields and filters for patients
+  const searchFields = [
+    'fullName',
+    'firstName',
+    'lastName',
+    'email',
+    'phone',
+    'medicalHistory.condition',
+    'allergies',
+    'medications',
+    'address.city',
+    'address.state',
+    'insuranceInfo.provider'
+  ];
+
+  const filters: SearchFilterOption[] = [
+    {
+      key: 'gender',
+      label: 'Gender',
+      type: 'select',
+      options: [...MEDICAL_FILTERS.GENDER]
+    },
+    {
+      key: 'medicalHistory.condition',
+      label: 'Medical Condition',
+      type: 'checkbox',
+      options: [
+        { value: 'healthy', label: 'Healthy' },
+        { value: 'hypertension', label: 'Hypertension' },
+        { value: 'diabetes', label: 'Diabetes' },
+        { value: 'asthma', label: 'Asthma' },
+        { value: 'coronary artery disease', label: 'Coronary Artery Disease' },
+        { value: 'arthritis', label: 'Arthritis' },
+        { value: 'depression', label: 'Depression' }
+      ]
+    },
+    {
+      key: 'address.state',
+      label: 'State',
+      type: 'select',
+      options: [
+        { value: 'ma', label: 'Massachusetts' },
+        { value: 'ny', label: 'New York' },
+        { value: 'ca', label: 'California' },
+        { value: 'tx', label: 'Texas' },
+        { value: 'fl', label: 'Florida' }
+      ]
+    },
+    {
+      key: 'dateOfBirth',
+      label: 'Date of Birth',
+      type: 'date'
+    }
+  ];
+
+  // Use unified search hook
+  const {
+    searchQuery,
+    filters: activeFilters,
+    filteredData: filteredPatients,
+    setSearchQuery,
+    setFilters,
+    clearAll
+  } = useUnifiedSearch({
+    data: patients,
+    searchFields,
+    caseSensitive: false
+  });
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -43,17 +115,6 @@ export default function PatientsPage() {
     fetchPatients();
   }, []);
 
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.phone.includes(searchTerm) ||
-      patient.medicalHistory.some(history =>
-        history.condition.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-  );
 
   // Pagination logic
   const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
@@ -63,7 +124,7 @@ export default function PatientsPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+  }, [searchQuery, activeFilters, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -197,15 +258,18 @@ export default function PatientsPage() {
           </div>
         </div>
 
-        <div className="flex gap-4">
-          <input
-            type="text"
-            placeholder="Search patients by name or condition..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+        {/* Enhanced Search and Filter Controls */}
+        <div className="mb-6">
+          <SearchFilter
+            searchFields={searchFields}
+            searchPlaceholder="Search patients by name, email, phone, medical conditions, address, or insurance..."
+            filters={filters}
+            onSearch={setSearchQuery}
+            onFilter={setFilters}
+            onClear={clearAll}
+            defaultSearchValue=""
+            loading={loading}
           />
-          <Button variant="outline">Filter</Button>
         </div>
 
         {loading ? (
